@@ -65,6 +65,12 @@ class ParameterManager(object):
 
     @ivar mins: Lower bound of each parameter.
     @ivar maxs: Lower bound of each parameter.
+
+    @keyword constraints: A single callable object (function, method,
+        class instance with I{__call__} method), or a sequence of such
+        objects, that enforce(s) any constraints on your parameter
+        values. See L{passesConstraints}. Instead of a sequence, you
+        can use an instance of L{constraints.Constraints}.
     """
     maxLineLength = 120
     dashes = "-"*maxLineLength
@@ -77,8 +83,8 @@ class ParameterManager(object):
         self.names = names
         self.sortedNameIndices = [
             names.index(name) for name in sorted(names)]
-        self.constraints = constraints if hasattr(
-            constraints, '__iter__') else [constraints]
+        self.constraints = [constraints] \
+            if notseq(constraints) else constraints
         self.setup(bounds)
 
     def setup(self, bounds):
@@ -185,6 +191,27 @@ class ParameterManager(object):
         bounds supplied to my constructor.
         """
         return (values - self.mins) / self.scales
+
+    def setConstraints(self, *args):
+        """
+        Sets my I{constraints} list to the callable function(s),
+        method(s), or object(s) supplied as one or more arguments.
+
+        What you supply as arguments will any constraint checking
+        already in place, so make sure you everything you want is
+        included.
+
+        All constraints, and only those constraints, defined by this
+        call will need to be be satisfied with each parameter
+        combination. To clear any existing constraints, call with no
+        args.
+
+        Called by L{Population.setConstraints}.
+        """
+        for f in args:
+            if not callable(f):
+                raise ValueError("Supplied object '{}' is not callable!", f)
+        self.constraints = list(args)
     
     def passesConstraints(self, values):
         """
@@ -198,11 +225,11 @@ class ParameterManager(object):
         if you constructed me with an empty list.)
         """
         if not self.constraints: return True
-        param = {}
+        params = {}
         for name, value in zip(self.names, values):
-            param[name] = value
+            params[name] = value
         for func in self.constraints:
-            if not func(param):
+            if not func(params):
                 # This constraint was violated, bail out
                 return False
         return True
@@ -305,9 +332,12 @@ class Population(object):
           angle, fully half of the challengers winning with an I{rir}
           of 0. (Unlikely!)
     
-    @keyword constraints: A list of callables that enforce any
-        constraints on your parameter values. See
-        L{ParameterManager.passesConstraints}.
+    @keyword constraints: A single callable object (function, method,
+        class instance with I{__call__} method), or a sequence of such
+        objects, that enforce(s) any constraints on your parameter
+        values. See L{ParameterManager.passesConstraints}. Instead of
+        a sequence, you can use an instance of
+        L{constraints.Constraints}.
     
     @keyword popsize: The number of individuals per parameter in the
         population, if not the default.
@@ -820,6 +850,25 @@ class Population(object):
         """
         self.reporter.addCallback(func, *args, **kw)
 
+    def setConstraints(self, *args):
+        """
+        Sets the constraint checkers maintained by my L{ParameterManager}
+        instance I{pm} to the callable function(s), method(s), or
+        object(s) supplied as one or more args.
+
+        What you supply as arguments will replace any constraint
+        checking already in place, so make sure you everything you
+        want is included.
+
+        All constraints, and only those constraints, defined by this
+        call will need to be be satisfied with each parameter
+        combination. To clear any existing constraints, call with no
+        args.
+
+        @see: L{ParameterManager.setConstraints}.
+        """
+        self.pm.setConstraints(*args)
+        
     def _keepStatusQuo(self, score):
         """
         Returns C{True} with a probability that increases as I{score}

@@ -181,6 +181,7 @@ from twisted.internet import reactor, defer
 from asynqueue import ThreadQueue, ProcessQueue, DeferredTracker
 from yampex.plot import Plotter
 
+from ade.constraints import RelationsChecker
 from ade.population import Population
 from ade.de import DifferentialEvolution
 from ade.image import ImageViewer
@@ -239,6 +240,11 @@ class Covid19Data(Data):
 
     @cvar re_region_no: Set this to a regular expression object for
         the region name to B{exclude} matching regions.
+
+    @cvar relations: Set this to a dict of dicts that defines a linear
+        relationship between two parameters and the maximum deviation
+        from such a relationship that will be accepted in
+        parameters. See L{ade.constraints.RelationsChecker}.
     
     @see: The L{Data} base class.
     """
@@ -249,6 +255,8 @@ class Covid19Data(Data):
 
     re_region_yes = None
     re_region_no = None
+
+    relations = None
 
     def __len__(self):
         return len(self.dates)
@@ -347,21 +355,25 @@ class Covid19Data_US(Covid19Data):
         # Upper limit to number of total cases (upper bound is population)
         ('L',   (2e6, 3.3e8)),
         # The initial exponential growth rate
-        ('r',   (0.32, 0.85)),
+        ('r',   (0.30, 0.75)),
         # Max fractional reduction in effective r from curve flattening effect
         # (0.0 for no flattening, 1.0 to completely flatten to zero growth)
-        ('rf',  (0.90, 1.0)),
+        ('rf',  (0.90, 0.98)),
         # Time for flattening to have about half of its full effect (days)
-        ('th',  (12, 25)),
+        ('th',  (12, 22)),
         # Time (days after 1/22/20) at the middle of the transition
         # from regular logistic-growth behavior to fully flattened
-        ('t0', (51, 67)),
+        ('t0', (54, 68)),
         #--- Linear (b) -------------------------------------------------------
         # Constant number of new cases reported each day since beginning
-        ('b',   (0, 250)),
+        ('b',   (0, 400)),
         #----------------------------------------------------------------------
     ]
     k0 = 42
+    relations = {
+        'r':    {'t0': (-29.207, +75.253, 4.0)},
+        'rf':   {'th': (+114.458, -91.217, 4.0)},
+    }
 
 
 class Covid19Data_US_LGPLL(Covid19Data):
@@ -1174,6 +1186,16 @@ class Evaluator(Picklable):
         """
         return self.data.X[self.kt(t)]
 
+    def relations(self):
+        """
+        Returns an instance of L{RelationsChecker} constructed with my
+        data's I{relations} dict-of-dicts, or C{None} if no relations
+        defined.
+        """
+        if self.data.relations is None:
+            return
+        return RelationsChecker(self.data.relations)
+    
     def setup(self, klass, daysAgo=0):
         """
         Call with a subclass I{klass} of L{Covid19Data} with data and
@@ -1741,6 +1763,8 @@ class Reporter(object):
         modeled time and ratio vectors I{tm}, I{Rm}.
         """
         Ra = 100 * Ra
+        K = np.flatnonzero(np.logical_or(Rm < 0, Rm > 1.0))
+        Rm[K] = 1.0
         Rm = 100 * Rm
         sp.add_axvline(-1)
         sp.add_annotation(
@@ -1906,6 +1930,8 @@ class Runner(object):
                 args[1], func=self.evaluate, bounds=bounds)
         else:
             self.p = Population(self.evaluate, names, bounds, popsize=args.p)
+        rc = self.ev.relations()
+        if rc: self.p.setConstraints(rc)
         reporter = Reporter(self.ev, self.p, args.r)
         self.p.addCallback(reporter)
         if len(self.p):
@@ -1970,7 +1996,7 @@ args = Args(
 )
 args('-d', '--days-ago', 0,
      "Limit latest data to N days ago rather than up to today")
-args('-m', '--maxiter', 75, "Maximum number of DE generations to run")
+args('-m', '--maxiter', 100, "Maximum number of DE generations to run")
 args('-e', '--bitter-end', "Keep working to the end even with little progress")
 args('-p', '--popsize', 40, "Population: # individuals per unknown parameter")
 args('-C', '--CR', 0.7, "DE Crossover rate CR")

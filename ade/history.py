@@ -311,7 +311,9 @@ class Analysis(object):
             kw['width'] = width
             N, Nc, Nr = Plotter.parseArgs(*args, **kw)[2:]
             kw['height'] = 0.8*width * Nr/Nc
-        return Plotter(*args, **kw)
+        pt = Plotter(*args, **kw)
+        pt.use_grid()
+        return pt
     
     def plot(self, names, **kw):
         """
@@ -341,7 +343,7 @@ class Analysis(object):
         """
         def setup(pt_sp):
             pt_sp.add_line("")
-            pt_sp.use_minorTicks('y'); pt_sp.use_grid()
+            pt_sp.use_minorTicks('y')
             pt_sp.add_marker('o', 2.0); pt_sp.add_color('red')
             pt_sp.set_xlabel("SSE")
             if semilog:
@@ -399,11 +401,13 @@ class Analysis(object):
     def prettyLine(self, m, b):
         return sub("Y={:+.6g}*X {} {:.6g}", m, "-" if b < 0 else "+", abs(b))
         
-    def plotXY(self, arg1, arg2, sp=None, useFraction=False):
+    def plotXY(self, p1, p2, sp=None, useFraction=False):
         """
-        Plots the values of the parameter at column I{k2} of my I{X} array
-        versus the values of the parameter at column I{k1}, with a
-        rough indication of the SSEs involved.
+        Plots the values of parameter I{p1} versus the values of parameter
+        I{p2}, with a rough indication of the SSEs involved.
+
+        If I{p1} or I{p2} is an integer, the parameter values for that
+        column of my I{X} array are used instead.
 
         Also plots a best-fit line determined by I{lineFit} with the
         pairs having the best 50% of the SSEs.
@@ -423,7 +427,7 @@ class Analysis(object):
             X = np.array([X.min(), X.max()])
             ax = sp(X, m*X+b, '-r')
             f1 = 0.0
-            kw = {'color': "blue"}
+            kw = {'color': "blue", 'linestyle': ""}
             for f2, mk, ms in self.fmms:
                 if ms:
                     K = self.Kf12(f1, f2) if useFraction else self.Kp12(f1, f2)
@@ -434,8 +438,8 @@ class Analysis(object):
                 f1 = f2
             return xName, yName, m, b
 
-        k1 = arg1 if isinstance(arg1, int) else self.name2k(arg1)
-        k2 = arg2 if isinstance(arg2, int) else self.name2k(arg2)
+        k1 = p1 if isinstance(p1, int) else self.name2k(p1)
+        k2 = p2 if isinstance(p2, int) else self.name2k(p2)
         if sp is None:
             pt = self.makePlotter(1)
             with pt as sp:

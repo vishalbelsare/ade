@@ -47,6 +47,12 @@ def sub(proto, *args):
     except:
         raise ValueError("Proto '{}' couldn't apply args {}", proto, args)
 
+def notseq(x):
+    """
+    Returns C{True} if I{x} is not a sequence.
+    """
+    return not hasattr(x, '__iter__')
+    
 def oops(failureObj):
     """
     A handy universal errback.
