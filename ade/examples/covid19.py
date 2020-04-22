@@ -353,152 +353,26 @@ class Covid19Data_US(Covid19Data):
     bounds = [
         #--- Logistic Growth with curve flattening (L, r, rf, th, t0) ---------
         # Upper limit to number of total cases (upper bound is population)
-        ('L',   (2e6, 3.3e8)),
+        ('L',   (1e7, 3.3e8)),
         # The initial exponential growth rate
-        ('r',   (0.30, 0.75)),
+        ('r',   (0.36, 0.54)),
         # Max fractional reduction in effective r from curve flattening effect
         # (0.0 for no flattening, 1.0 to completely flatten to zero growth)
-        ('rf',  (0.90, 0.98)),
+        ('rf',  (0.91, 0.95)),
         # Time for flattening to have about half of its full effect (days)
-        ('th',  (12, 22)),
+        ('th',  (13, 17)),
         # Time (days after 1/22/20) at the middle of the transition
         # from regular logistic-growth behavior to fully flattened
-        ('t0', (54, 68)),
+        ('t0', (60, 67)),
         #--- Linear (b) -------------------------------------------------------
         # Constant number of new cases reported each day since beginning
-        ('b',   (0, 400)),
+        ('b',   (0, 150)),
         #----------------------------------------------------------------------
     ]
     k0 = 42
     relations = {
-        'r':    {'t0': (-29.207, +75.253, 4.0)},
-        'rf':   {'th': (+114.458, -91.217, 4.0)},
+        'r':    {'t0': (-27.96, +74.87, 3.0)},
     }
-
-
-class Covid19Data_US_LGPLL(Covid19Data):
-    """
-    US, first-order ODE, 7-parameter model: linear combination of
-    logistic growth, power law, and linear.
-
-    AICc with 3/31/20 data was +4 after 100 generations.
-    """
-    countryCode = 'US'
-    bounds = [
-        #--- Logistic Growth (list these first) -------------------------------
-        # Upper limit to number of total cases
-        ('L',   (1e5, 5e6)),
-        # The growth rate, proportional to the maximum number of
-        # new cases being reported per day from logistic growth 
-        ('r',   (0.03, 0.28)),
-        #--- Power-Law (list these second) ------------------------------------
-        # Scaling coefficient
-        ('a',   (1500, 5000)),
-        # Power-law exponent
-        ('n',   (0.01, 0.8)),
-        # Start of local country/region epidemic (days after 1/22/20)
-        ('ts',  (55, 58)),
-        # Decay time constant (two years is 730 days)
-        ('tc',  (10, 1e6)),
-        #--- Linear (list this last) ------------------------------------------
-        # Constant number of new cases reported each day since beginning
-        ('b',   (0, 400)),
-        #----------------------------------------------------------------------
-    ]
-    k0 = 50
-
-
-class Covid19Data_US_LGL(Covid19Data):
-    """
-    US, first-order ODE, 3-parameter model: logistic growth and
-    linear.
-
-    AICc with 3/31/20 data was +1.7 after 50 generations, but the
-    upper limit seems unreasonably low (optimistic).
-    """
-    countryCode = 'US'
-    summaryPosition = 'E'
-    bounds = [
-        #--- Logistic Growth (list these first) -------------------------------
-        # Upper limit to number of total cases
-        ('L',   (2e5, 7e5)),
-        # The growth rate, proportional to the maximum number of
-        # new cases being reported per day from logistic growth 
-        ('r',   (0.2, 0.35)),
-        #--- Linear (list this last) ------------------------------------------
-        # Constant number of new cases reported each day since beginning
-        ('b',   (0, 1e3)),
-        #----------------------------------------------------------------------
-    ]
-    k0 = 50
-
-class Covid19Data_US_PLL(Covid19Data):
-    """
-    US, first-order ODE, 5-parameter model: linear combination of
-    power law and linear.
-
-    AICc with 3/31/20 data was -1.8 after 50 generations. That is
-    significantly better than US7 or US3, but the model doesn't track
-    known data much earlier than a week ago.
-
-    The I{tc} parameter goes absurdly high with no significant effect
-    on model fitness; there is no apparently no exponential decay to
-    be seen in the power-law behavior, here or in US7.
-    """
-    countryCode = 'US'
-    bounds = [
-        #--- Power-Law --------------------------------------------------------
-        # Scaling coefficient
-        ('a',   (200, 2000)),
-        # Power-law exponent
-        ('n',   (0.8, 1.7)),
-        # Start of local country/region epidemic (days after 1/22/20)
-        ('ts',  (50, 57)),
-        # Decay time constant (two years is 730 days)
-        ('tc',  (10, 1e6)),
-        #--- Linear (list this last) ------------------------------------------
-        # Constant number of new cases reported each day since beginning
-        ('b',   (200, 1200)),
-        #----------------------------------------------------------------------
-    ]
-    k0 = 50
-
-
-class Covid19Data_US_2d(Covid19Data):
-    """
-    US, second-order ODE treating model as the differential in the
-    number of number of new daily cases. In other words, as the
-    increase of the increase.
-    """
-    countryCode = 'US'
-    second_deriv = True
-    bounds_lg = [
-        #--- Logistic Growth (list these first) -------------------------------
-        # Total cases after exponential growth completely stopped
-        ('L',   (1e5, 3.3e8)),
-        # The growth rate, proportional to the maximum number of
-        # new cases being reported per day from logistic growth 
-        ('r',   (0.12, 0.26)),
-    ]
-    bounds_pl = [
-        #--- Power-Law (list these second) ------------------------------------
-        # Scaling coefficient
-        ('a',   (20.0, 700.0)),
-        # Power-law exponent
-        ('n',   (0.0, 1.4)),
-        # Start of local country/region epidemic (days after 1/22/20)
-        ('ts',  (42, 58)),
-        # Decay time constant (two years is 730 days)
-        ('tc',  (2, 600)),
-    ]
-    bounds_l = [
-        #--- Linear (list this last) ------------------------------------------
-        # Constant number of new cases reported each day since beginning
-        ('b',   (0.0, 0.1)),
-        #----------------------------------------------------------------------
-    ]
-    bounds = bounds_lg + bounds_pl + bounds_l
-    k0 = 40
 
 
 class Covid19Data_Spain(Covid19Data):
@@ -675,6 +549,30 @@ class Covid19Data_SouthKorea(Covid19Data):
         #----------------------------------------------------------------------
     ]
     k0 = 34
+
+
+class Covid19Data_Argentina(Covid19Data):
+    countryCode = 'Argentina'
+    bounds = [
+        #--- Logistic Growth with curve flattening (L, r, rf, th, t0) ---------
+        # Upper limit to number of total cases (upper bound is population)
+        ('L',   (3e3, 4.5e7)),
+        # The initial exponential growth rate
+        ('r',   (0.07, 0.20)),
+        # Max fractional reduction in effective r from curve flattening effect
+        # (0.0 for no flattening, 1.0 to completely flatten to zero growth)
+        ('rf',  (0.4, 0.8)),
+        # Time for flattening to have about half of its full effect (days)
+        ('th',  (1, 20)),
+        # Time (days after 1/22/20) at the middle of the transition
+        # from regular logistic-growth behavior to fully flattened
+        ('t0', (65, 74)),
+        #--- Linear (b) -------------------------------------------------------
+        # Constant number of new cases reported each day since beginning
+        ('b',   (0, 3)),
+        #----------------------------------------------------------------------
+    ]
+    k0 = 50
 
 
 class Covid19Data_Singapore(Covid19Data):
@@ -866,7 +764,7 @@ class Model(object):
     #--- Logistic Growth Model with Curve Flattening --------------------------
     
     xd_logistic_flattened_text \
-        = "r*x*(1 - x/L)*(0.5*rf*(1 - tanh(1.1*(t-t0)/th)) - rf + 1)"
+        = "r*x*(1-x/L)*\n         (0.5*rf*(1-tanh(1.1*(t-t0)/th))-rf+1)"
 
     def flatten(self, t, rf, th, t0):
         """
@@ -1402,20 +1300,20 @@ class Reporter(object):
     minShown = 10
     daysForward = 30
     
-    def __init__(self, evaluator, population, includeRatio=False):
+    def __init__(self, evaluator, population, ratio=False, daily=False):
         """
-        C{Reporter(evaluator, population, includeRatio=False)}
+        C{Reporter(evaluator, population, ratio=False, daily=False)}
         """
         self.ev = evaluator
         self.p = population
-        self.includeRatio = includeRatio
+        self.includeRatio = ratio
+        self.includeDaily = daily
         self.prettyValues = population.pm.prettyValues
-        if includeRatio:
-            N = 4
-            height = 19
-        else:
-            N = 3
-            height = 17
+        N = 3; height = 17
+        for option in ratio, daily:
+            if option:
+                N += 1
+                height += 2
         self.pt = Plotter(
             1, N,
             filePath=self.plotFilePath, width=12, height=height, h2=[0, 2])
@@ -1753,9 +1651,9 @@ class Reporter(object):
         sp.set_tickSpacing('x', 7.0, 1.0)
         return self.model_future(sp, values)
 
-    def subplot_bottom(self, sp, ta, Ra, tm, Rm):
+    def subplot_ratio(self, sp, ta, Ra, tm, Rm):
         """
-        Draws a fourth subplot on the very bottom showing the modeled
+        Draws an optional subplot below the main ones showing the modeled
         ratio between new and total cases, both past (actual) and
         future (modeled).
 
@@ -1775,7 +1673,25 @@ class Reporter(object):
         sp.set_ylabel("% New")
         ax = sp(ta, Ra)
         self.add_model(ax, tm, Rm)
-    
+
+    def subplot_daily(self, sp, ta, XDa, tm, XDm):
+        """
+        Draws an optional subplot below the main ones showing the number
+        of new daily cases, both past (actual) and future (modeled).
+
+        Call with actual-data time and daily-case vectors I{ta},
+        I{XDa} and modeled time and daily-case vectors I{tm}, I{XDm}.
+        """
+        sp.add_axvline(-1)
+        sp.add_annotation(
+            ta[-1], "{} had {:.0f} new case reports",
+            self.ev.dayText(), XDa[-1])
+        sp.add_textBox(
+            'NW', "New cases reported each day")
+        sp.set_ylabel("Newly Reported")
+        ax = sp(ta, XDa)
+        self.add_model(ax, tm, XDm)
+        
     def __call__(self, values, counter, SSE):
         """
         Prints out a new best parameter combination and its curve vs
@@ -1814,11 +1730,14 @@ class Reporter(object):
             for line in DISCLAIMER.split('\n'):
                 sp.add_textBox("SE", line)
             tm, Xm, XDm = self.subplot_lower(sp, values)
-            if self.includeRatio:
+            if self.includeRatio or self.includeDaily:
                 tm = np.concatenate([ta, tm])
                 Xm = np.concatenate([Xam, Xm])
                 XDm = np.concatenate([XDam, XDm])
-                self.subplot_bottom(sp, ta, XDa/Xa, tm, XDm/Xm)
+                if self.includeRatio:
+                    self.subplot_ratio(sp, ta, XDa/Xa, tm, XDm/Xm)
+                if self.includeDaily:
+                    self.subplot_daily(sp, ta, XDa, tm, XDm)
         self.pt.show()
 
 
@@ -1932,7 +1851,7 @@ class Runner(object):
             self.p = Population(self.evaluate, names, bounds, popsize=args.p)
         rc = self.ev.relations()
         if rc: self.p.setConstraints(rc)
-        reporter = Reporter(self.ev, self.p, args.r)
+        reporter = Reporter(self.ev, self.p, ratio=args.r, daily=args.d)
         self.p.addCallback(reporter)
         if len(self.p):
             yield self.reEvaluate()
@@ -1994,7 +1913,7 @@ args = Args(
     Press the Enter key to quit early.
     """
 )
-args('-d', '--days-ago', 0,
+args('-D', '--days-ago', 0,
      "Limit latest data to N days ago rather than up to today")
 args('-m', '--maxiter', 100, "Maximum number of DE generations to run")
 args('-e', '--bitter-end', "Keep working to the end even with little progress")
@@ -2013,5 +1932,7 @@ args('-P', '--pickle', "covid19.dat",
      "Pickle dump file for finalized ade.Population object ('-' for none)")
 args('-r', '--include-ratio',
      "Include subplot with ratio of new vs cumulative cases")
+args('-d', '--include-daily',
+     "Include subplot with new daily cases")
 args("<Country/State Name> [<pickle file>]")
 args(main)

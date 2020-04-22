@@ -69,6 +69,8 @@ args = Args(
     
     """
 )
+args('-d', '--dims', '',
+     "PNG plot dimensions (pixels, W only or WxL, e.g., '1200x800'")
 args('-f', '--file-path', '',
      "Path of a PNG file to be created/updated instead of a plot window")
 args('-r', '--max-ratio', 0.0,
@@ -93,7 +95,7 @@ def main():
     filePath = args[0]
     p = Population.load(os.path.expanduser(filePath))
     analyzer = p.history.a
-    if args.f: analyzer.filePath(args.f)
+    if args.f: analyzer.filePath(args.f, dims=args.d)
     names = args[1:] if len(args) > 1 else []
     pt = None
     if args.r:

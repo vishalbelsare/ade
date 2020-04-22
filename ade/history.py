@@ -267,35 +267,52 @@ class Analysis(object):
             return 9
         return N_left
 
-    def filePath(self, baseFilePath=None, width=None):
+    def filePath(self, baseFilePath=None, dims=None):
         """
         Obtains a unique filePath for a PNG file, or, with I{baseFilePath}
-        set, sets my I{fileSpec} to a 5-list: C{[directory, basename,
-        extension, count, width]} so that plotting is done to a PNG
-        file at I{filePath}.
+        set, sets my I{fileSpec} to a 6-list so that plotting is done
+        to a PNG file at I{filePath}.
 
-        With no I{baseFilePath} specified: If my I{fileSpec} has been
-        set, a numerical suffix gets appended to the base name (but
-        not the extension) to all files after the first one generated,
-        ensuring that each generated figure/PNG file is unique. The
-        unique file path is returned along with the desired width in
-        pixels. Otherwise, a pair of C{None} objects is returned.
+        The 6-list is: C{[directory, basename, extension, count,
+        width, height]}
+        
+        A numerical suffix gets appended to the base name (but not the
+        extension) to all files after the first one generated,
+        ensuring that each generated figure/PNG file is
+        unique. Without the keyword I{baseFilePath} set, the unique
+        file path is returned from a previous setting, along with the
+        desired width and height in inches.
+
+        @keyword baseFilePath: Specify this to set my
+            I{fileSpec}. C{None} is returned.
+
+        @keyword dims: Set to a string with W or WxL as an integer
+            number of pixels (not inches) for the width or width x
+            height of the PNG file(s).
         """
-        if width is None: width = self.defaultWidth
+        def inches(x):
+            return float(x) / Plotter.DPI
+
+        height = None
+        if dims:
+            if 'x' in dims:
+                width, height = [inches(x) for x in dims.split('x')]
+            else: width = inches(dims)
+        else: width = self.defaultWidth
         if baseFilePath is None:
             if self.fileSpec is None:
-                return None, None
-            directory, baseName, ext, count, width = self.fileSpec
+                return
+            directory, baseName, ext, count, width, height = self.fileSpec
             count += 1
             self.fileSpec[3] = count
             fileName = sub(
                 "{}-{:d}.{}", baseName, count, ext) if count > 1 else sub(
                     "{}.{}", baseName, ext)
-            return os.path.join(directory, fileName), width
+            return os.path.join(directory, fileName), width, height
         directory, fileName = os.path.split(baseFilePath)
         baseName, ext = os.path.splitext(fileName)
-        self.fileSpec = [directory, baseName, ext.lstrip('.'), 0, width]
-
+        self.fileSpec = [directory, baseName, ext.lstrip('.'), 0, width, height]
+    
     def makePlotter(self, *args, **kw):
         """
         Returns a L{Plotter} object, constructed with the supplied args
@@ -305,12 +322,16 @@ class Analysis(object):
         file instead of showing a plot window. There will be a
         uniquifying numerical suffix appended to the file's base name.
         """
-        filePath, width = self.filePath()
-        if filePath:
+        stuff = self.filePath()
+        height = kw.pop('height', None)
+        if stuff:
+            filePath, width, height = stuff
             kw['filePath'] = filePath
             kw['width'] = width
             N, Nc, Nr = Plotter.parseArgs(*args, **kw)[2:]
-            kw['height'] = 0.8*width * Nr/Nc
+            if height is None:
+                height = width * min([0.7, Nr/Nc])
+        kw['height'] = height
         pt = Plotter(*args, **kw)
         pt.use_grid()
         return pt
